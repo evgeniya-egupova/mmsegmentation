@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions
 # and limitations under the License.
 
+import sys
 import logging
 import os
 import tempfile
@@ -43,16 +44,26 @@ from ote_sdk.usecases.tasks.interfaces.evaluate_interface import IEvaluationTask
 from ote_sdk.usecases.tasks.interfaces.inference_interface import IInferenceTask
 from ote_sdk.usecases.tasks.interfaces.optimization_interface import IOptimizationTask, OptimizationType
 
-from compression.api import DataLoader
-from compression.engines.ie_engine import IEEngine
-from compression.graph import load_model, save_model
-from compression.graph.model_utils import compress_model_weights, get_nodes_by_type
-from compression.pipeline.initializer import create_pipeline
+# from compression.api import DataLoader
+# from compression.engines.ie_engine import IEEngine
+# from compression.graph import load_model, save_model
+# from compression.graph.model_utils import compress_model_weights, get_nodes_by_type
+# from compression.pipeline.initializer import create_pipeline
+
+from openvino.tools.pot.api import DataLoader
+from openvino.tools.pot.engines.ie_engine import IEEngine
+from openvino.tools.pot.graph import load_model, save_model
+from openvino.tools.pot.graph.model_utils import compress_model_weights, get_nodes_by_type
+from openvino.tools.pot.pipeline.initializer import create_pipeline
 
 from .configuration import OTESegmentationConfig
 
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+hdl = logging.StreamHandler(stream=sys.stdout)
+hdl.setLevel(logging.INFO)
+logger.addHandler(hdl)
 
 
 def get_output(net, outputs, name):
@@ -245,14 +256,129 @@ class OpenVINOSegmentationTask(IInferenceTask, IEvaluationTask, IOptimizationTas
 
         stat_subset_size = self.hparams.pot_parameters.stat_subset_size
         preset = self.hparams.pot_parameters.preset.name.lower()
+        preset = "mixed"
+        logger.info(f'Preset: {preset}')
 
         algorithms = [
             {
                 'name': 'DefaultQuantization',
                 'params': {
                     'target_device': 'ANY',
+                    'maximal_drop': 0.01,
                     'preset': preset,
-                    'stat_subset_size': min(stat_subset_size, len(data_loader))
+                    "range_estimator": {
+                        "preset": "quantile"
+                    },
+                    'stat_subset_size': min(stat_subset_size, len(data_loader)),
+                    # 'use_fast_bias': False,
+                    "ignored": {
+                        "scope":[
+                            "Mul_74",
+                            "Mul_74",
+                            "Mul_94",
+                            "Mul_195",
+                            "Mul_215",
+                            "Mul_346",
+                            "Mul_366",
+                            "Mul_467",
+                            "Mul_487",
+                            "Mul_623",
+                            "Mul_643",
+                            "Mul_663",
+                            "Mul_802",
+                            "Mul_822",
+                            "Mul_842",
+                            "Mul_1069",
+                            "Mul_1089",
+                            "Mul_1109",
+                            "Mul_1248",
+                            "Mul_1268",
+                            "Mul_1288",
+                            "Mul_1515",
+                            "Mul_1535",
+                            "Mul_1555",
+                            "Mul_1694",
+                            "Mul_1714",
+                            "Mul_1734",
+                            "Mul_1961",
+                            "Mul_1981",
+                            "Mul_2001",
+                            "Mul_2140",
+                            "Mul_2160",
+                            "Mul_2180",
+                            "Mul_2412",
+                            "Mul_2432",
+                            "Mul_2452",
+                            "Mul_2472",
+                            "Mul_2649",
+                            "Mul_2669",
+                            "Mul_2689",
+                            "Mul_2709",
+                            "Mul_3065",
+                            "Mul_3085",
+                            "Mul_3105",
+                            "Mul_3125",
+                            "Mul_3302",
+                            "Mul_3322",
+                            "Mul_3342",
+                            "Mul_3362",
+                            "Mul_3781"
+                        ]
+                        # "scope": [
+                        #     'Mul_102',
+                        #     'Mul_108',
+                        #     'Mul_223',
+                        #     'Mul_229',
+                        #     'Mul_374',
+                        #     'Mul_380',
+                        #     'Mul_495',
+                        #     'Mul_501',
+                        #     'Mul_672',
+                        #     'Mul_678',
+                        #     'Mul_684',
+                        #     'Mul_851',
+                        #     'Mul_857',
+                        #     'Mul_863',
+                        #     'Mul_1118',
+                        #     'Mul_1124',
+                        #     'Mul_1130',
+                        #     'Mul_1297',
+                        #     'Mul_1303',
+                        #     'Mul_1309',
+                        #     'Mul_1564',
+                        #     'Mul_1570',
+                        #     'Mul_1576',
+                        #     'Mul_1743',
+                        #     'Mul_1749',
+                        #     'Mul_1755',
+                        #     'Mul_2010',
+                        #     'Mul_2016',
+                        #     'Mul_2022',
+                        #     'Mul_2189',
+                        #     'Mul_2195',
+                        #     'Mul_2201',
+                        #     'Mul_2482',
+                        #     'Mul_2488',
+                        #     'Mul_2494',
+                        #     'Mul_2500',
+                        #     'Mul_2719',
+                        #     'Mul_2725',
+                        #     'Mul_2731',
+                        #     'Mul_2737',
+                        #     'Mul_3135',
+                        #     'Mul_3141',
+                        #     'Mul_3147',
+                        #     'Mul_3153',
+                        #     'Mul_3372',
+                        #     'Mul_3378',
+                        #     'Mul_3384',
+                        #     'Mul_3390']
+                        # "scope": ['Resize_3896',
+                        #           'Resize_3877'],
+                        # "operations": [{
+                        #     "type": "Multiply"
+                        # }]
+                    }
                 }
             }
         ]
@@ -266,6 +392,7 @@ class OpenVINOSegmentationTask(IInferenceTask, IEvaluationTask, IOptimizationTas
         compress_model_weights(compressed_model)
 
         with tempfile.TemporaryDirectory() as tempdir:
+            # tempdir = ''
             save_model(compressed_model, tempdir, model_name="model")
             with open(os.path.join(tempdir, "model.xml"), "rb") as f:
                 output_model.set_data("openvino.xml", f.read())

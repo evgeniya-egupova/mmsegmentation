@@ -3,9 +3,9 @@ _base_ = [
 ]
 
 # pre-trained params settings
-ignore_keys = [r'^backbone\.increase_modules\.', r'^backbone\.increase_modules\.',
-               r'^backbone\.downsample_modules\.', r'^backbone\.final_layer\.',
-               r'^head\.']
+# ignore_keys = [r'^backbone\.increase_modules\.', r'^backbone\.increase_modules\.',
+#                r'^backbone\.downsample_modules\.', r'^backbone\.final_layer\.',
+#                r'^head\.']
 
 norm_cfg = dict(type='SyncBN', requires_grad=True)
 model = dict(
@@ -197,7 +197,7 @@ log_config = dict(
 # yapf:enable
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-load_from = 'https://storage.openvinotoolkit.org/repositories/openvino_training_extensions/models/custom_semantic_segmentation/litehrnet18_imagenet1k_rsc.pth'
+load_from = ''
 resume_from = None
 workflow = [('train', 1)]
 cudnn_benchmark = True
